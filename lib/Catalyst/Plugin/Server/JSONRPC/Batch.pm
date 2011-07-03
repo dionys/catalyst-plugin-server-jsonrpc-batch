@@ -3,25 +3,28 @@ package Catalyst::Plugin::Server::JSONRPC::Batch;
 use strict;
 use warnings;
 
+use Class::MOP ();
+
+
+our $VERSION = '0.01';
+
+our $Method = 'system.handle_batch';
+
 BEGIN {
-    use Class::MOP;
+    my $mod = 'JSON::RPC::Common::Procedure::Call';
 
-    my $class = 'JSON::RPC::Common::Procedure::Call';
+	Class::MOP::load_class($mod) unless Class::MOP::is_class_loaded($mod);
 
-    unless (Class::MOP::is_class_loaded($class)) {
-        Class::MOP::load_class($class);
-    }
-
-    my $meta = $class->meta;
+    my $meta = $mod->meta;
 
     $meta->make_mutable();
     $meta->add_around_method_modifier(
         'inflate',
         sub {
-            my ($method, $class, @args) = @_;
+            my ($meth, $mod, @args) = @_;
 
             if (@args == 1 && ref($args[0]) eq 'ARRAY') {
-                return $class->new_from_data(
+                return $mod->new_from_data(
                     'jsonrpc' => '2.0',
                     'id'      => scalar(time()),
                     'method'  => $Catalyst::Plugin::Server::JSONRPC::Batch::Method,
@@ -29,57 +32,98 @@ BEGIN {
                 );
             }
             else {
-                return $method->($class, @args);
+                return $meth->($mod, @args);
             }
         }
     );
     $meta->make_immutable();
 }
 
-
-our $Method = 'system.handle_batch';
-
-
 sub setup_engine {
-    my $class = shift();
+    my $app = shift();
 
-    $class->server->jsonrpc->add_private_method(
+    $app->server->jsonrpc->add_private_method(
         $Method => sub {
             my ($c, @args) = @_;
 
+			my $conf = $c->server->jsonrpc->config;
+			my $req  = $c->req;
+			my $res  = $c->res;
+			my $stor = $c->stash;
+            my $par  = $req->jsonrpc->_jsonrpc_parser;
+            my @rets = ();
+
             # HACK: Store values.
-            my $body = $c->req->_body;
-            my $path = $c->server->jsonrpc->config->path;
+            my $body = $req->_body;
+            my $path = $conf->path;
 
-            my $parser    = $c->req->jsonrpc->_jsonrpc_parser;
-            my @requests  = map { $parser->encode($_); } @{$c->req->args};
-            my @responses = ();
-
-            foreach my $request (@requests) {
-                $c->req->_body(HTTP::Body->new($c->req->content_type, length($request)));
-                $c->req->_body->add($request);
-                $c->server->jsonrpc->config->path('');
-                $c->stash->{'jsonrpc_generated'} = 0;
-                $c->res->body('');
+            foreach (map { $par->encode($_) } @{$req->args}) {
+                $conf->path('');
+                $stor->{'jsonrpc_generated'} = 0;
+                $req->_body(HTTP::Body->new($c->req->content_type, length($_)));
+                $req->_body->add($_);
+                $res->body('');
 
                 $c->prepare_action();
                 $c->dispatch();
-                unless ($c->stash->{'jsonrpc_generated'}) {
-                    $c->stash->{'current_view_instance'}->process($c);
-                }
+				$stor->{'current_view_instance'}->process($c) unless $stor->{'jsonrpc_generated'};
 
-                push(@responses, $c->res->body);
+                push(@rets, $res->body);
             }
 
             # Restore values.
-            $c->req->_body($body);
-            $c->server->jsonrpc->config->path($path);
+            $req->_body($body);
+            $conf->path($path);
 
-            $c->res->body('[' . join(',', @responses) . ']');
+            $res->body('[' . join(',', @rets) . ']');
         }
     );
-    $class->next::method(@_);
+
+    $app->next::method(@_);
 }
 
 
 1;
+
+__END__
+
+=pod
+
+=head1 NAME
+
+Catalyst::Plugin::Server::JSONRPC::Batch - Batch calls implementation for
+Catalyst JSONRPC-server plugin.
+
+=head1 SYNOPSIS
+
+    use Catalyst qw/
+        Server
+        Server::JSONRPC
+        Server::JSONRPC::Batch
+	/;
+
+=head1 DESCRIPTION
+
+=head1 INTERNAL METHODS
+
+=over 4
+
+=item setup_engine
+
+=back
+
+=head1 SEE ALSO
+
+L<JSON-RPC 2.0 Specification|http://groups.google.com/group/json-rpc/web/json-rpc-2-0>
+
+=head1 AUTHORS
+
+Denis Ibaev (dionys), C<dionys@gmail.com>
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright (c) 2011 the aforementioned authors. All rights reserved. This
+program is free software; you can redistribute it and/or modify it under the
+same terms as Perl itself.
+
+=cut
