@@ -13,7 +13,7 @@ our $Method = 'system.handle_batch';
 BEGIN {
     my $mod = 'JSON::RPC::Common::Procedure::Call';
 
-	Class::MOP::load_class($mod) unless Class::MOP::is_class_loaded($mod);
+    Class::MOP::load_class($mod) unless Class::MOP::is_class_loaded($mod);
 
     my $meta = $mod->meta;
 
@@ -46,10 +46,10 @@ sub setup_engine {
         $Method => sub {
             my ($c, @args) = @_;
 
-			my $conf = $c->server->jsonrpc->config;
-			my $req  = $c->req;
-			my $res  = $c->res;
-			my $stor = $c->stash;
+            my $conf = $c->server->jsonrpc->config;
+            my $req  = $c->req;
+            my $res  = $c->res;
+            my $stor = $c->stash;
             my $par  = $req->jsonrpc->_jsonrpc_parser;
             my @rets = ();
 
@@ -66,7 +66,8 @@ sub setup_engine {
 
                 $c->prepare_action();
                 $c->dispatch();
-				$stor->{'current_view_instance'}->process($c) unless $stor->{'jsonrpc_generated'};
+                $stor->{'current_view_instance'}->process($c)
+                        unless $stor->{'jsonrpc_generated'};
 
                 push(@rets, $res->body);
             }
@@ -100,7 +101,7 @@ Catalyst JSONRPC-server plugin.
         Server
         Server::JSONRPC
         Server::JSONRPC::Batch
-	/;
+    /;
 
 =head1 DESCRIPTION
 

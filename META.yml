@@ -1,0 +1,25 @@
+---
+abstract: "Batch calls implementation for\nCatalyst JSONRPC-server plugin."
+author:
+  - 'Denis Ibaev <dionys@gmail.com>'
+build_requires:
+  Test::More: 0
+configure_requires:
+  Module::Build: 0.38
+dynamic_config: 1
+generated_by: 'Module::Build version 0.38, CPAN::Meta::Converter version 2.110930'
+license: perl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Catalyst-Plugin-Server-JSONRPC-Batch
+provides:
+  Catalyst::Plugin::Server::JSONRPC::Batch:
+    file: lib/Catalyst/Plugin/Server/JSONRPC/Batch.pm
+    version: 0.01
+requires:
+  Catalyst::Plugin::Server::JSONRPC: 0
+  perl: 5.006
+resources:
+  license: http://dev.perl.org/licenses/
+version: 0.01
