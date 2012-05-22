@@ -76,7 +76,9 @@ sub setup_engine {
             $req->_body($body);
             $conf->path($path);
 
-            $res->body('[' . join(',', @rets) . ']');
+            my $result = '[' . join(',', @rets) . ']';
+            $res->content_length(length $result);
+            $res->body($result);
         }
     );
 
@@ -115,7 +117,7 @@ Catalyst JSONRPC-server plugin.
 
 =head1 SEE ALSO
 
-L<JSON-RPC 2.0 Specification|http://groups.google.com/group/json-rpc/web/json-rpc-2-0>
+L<JSON-RPC 2.0 Specification|http://www.jsonrpc.org/specification>
 
 =head1 AUTHORS
 
