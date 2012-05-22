@@ -76,7 +76,9 @@ sub setup_engine {
             $req->_body($body);
             $conf->path($path);
 
-            $res->body('[' . join(',', @rets) . ']');
+            my $result = '[' . join(',', @rets) . ']';
+            $res->content_length(length $result);
+            $res->body($result);
         }
     );
 
