@@ -4,40 +4,43 @@ use strict;
 use warnings;
 
 use Class::MOP ();
+use HTTP::Body ();
 
 
 our $VERSION = '0.01';
 
 our $Method = 'system.handle_batch';
 
+
 BEGIN {
-    my $mod = 'JSON::RPC::Common::Procedure::Call';
+    my $class = 'JSON::RPC::Common::Procedure::Call';
 
-    Class::MOP::load_class($mod) unless Class::MOP::is_class_loaded($mod);
+    Class::MOP::load_class($class) unless Class::MOP::is_class_loaded($class);
 
-    my $meta = $mod->meta;
+    my $meta = $class->meta;
 
     $meta->make_mutable();
     $meta->add_around_method_modifier(
         'inflate',
         sub {
-            my ($meth, $mod, @args) = @_;
+            my ($meth, $class, @args) = @_;
 
             if (@args == 1 && ref($args[0]) eq 'ARRAY') {
-                return $mod->new_from_data(
-                    'jsonrpc' => '2.0',
-                    'id'      => scalar(time()),
-                    'method'  => $Catalyst::Plugin::Server::JSONRPC::Batch::Method,
-                    'params'  => $args[0]
+                return $class->new_from_data(
+                    jsonrpc => '2.0',
+                    id      => scalar(time()),
+                    method  => $Catalyst::Plugin::Server::JSONRPC::Batch::Method,
+                    params  => $args[0]
                 );
             }
             else {
-                return $meth->($mod, @args);
+                return $meth->($class, @args);
             }
         }
     );
     $meta->make_immutable();
 }
+
 
 sub setup_engine {
     my $app = shift();
@@ -46,38 +49,39 @@ sub setup_engine {
         $Method => sub {
             my ($c, @args) = @_;
 
-            my $conf = $c->server->jsonrpc->config;
-            my $req  = $c->req;
-            my $res  = $c->res;
-            my $stor = $c->stash;
-            my $par  = $req->jsonrpc->_jsonrpc_parser;
-            my @rets = ();
+            my $config = $c->server->jsonrpc->config;
+            my $req    = $c->req;
+            my $res    = $c->res;
+            my $stash  = $c->stash;
+            my $parser = $req->jsonrpc->_jsonrpc_parser;
+            my @results;
 
             # HACK: Store values.
             my $body = $req->_body;
-            my $path = $conf->path;
+            my $path = $config->path;
 
-            foreach (map { $par->encode($_) } @{$req->args}) {
-                $conf->path('');
-                $stor->{'jsonrpc_generated'} = 0;
-                $req->_body(HTTP::Body->new($c->req->content_type, length($_)));
+            foreach (map { $parser->encode($_) } @{$req->args}) {
+                $config->path('');
+                $stash->{jsonrpc_generated} = 0;
+                $req->_body(HTTP::Body->new($req->content_type, length($_)));
                 $req->_body->add($_);
                 $res->body('');
 
                 $c->prepare_action();
                 $c->dispatch();
-                $stor->{'current_view_instance'}->process($c)
-                        unless $stor->{'jsonrpc_generated'};
+                $stash->{current_view_instance}->process($c)
+                        unless $stash->{jsonrpc_generated};
 
-                push(@rets, $res->body);
+                push(@results, $res->body);
             }
 
             # Restore values.
             $req->_body($body);
-            $conf->path($path);
+            $config->path($path);
 
-            my $result = '[' . join(',', @rets) . ']';
-            $res->content_length(length $result);
+            my $result = '[' . join(',', @results) . ']';
+
+            $res->content_length(length($result));
             $res->body($result);
         }
     );
