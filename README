@@ -1,7 +1,7 @@
 NAME
 
-Catalyst::Plugin::Server::JSONRPC::Batch - Batch calls implementation for
-Catalyst JSONRPC-server plugin.
+Catalyst::Plugin::Server::JSONRPC::Batch - batch requests implementation for
+Catalyst JSON-RPC server plugin.
 
 INSTALLATION
 
