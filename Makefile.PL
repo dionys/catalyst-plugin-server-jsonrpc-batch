@@ -11,7 +11,12 @@ requires       'HTTP::Body';
 requires       'JSON::RPC::Common';
 build_requires 'Test::More';
 
+resources 'bugtracker' => 'http://github.com/dionys/catalyst-plugin-server-jsonrpc-batch/issues';
+resources 'license'    => 'http://dev.perl.org/licenses/';
+resources 'repository' => 'http://github.com/dionys/catalyst-plugin-server-jsonrpc-batch';
+
 no_index 't';
+no_index 'inc';
 
 auto_install;
 
