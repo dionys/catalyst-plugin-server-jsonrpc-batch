@@ -5,8 +5,7 @@ MANIFEST
 META.json
 META.yml
 README
-t/001-load.t
-t/990-pod.t
-t/991-pod-coverage.t
-t/992-manifest.t
-t/993-boilerplate.t
+t/00-use.t
+t/01-pod.t
+t/02-pod-coverage.t
+t/03-manifest.t
